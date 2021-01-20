@@ -37,6 +37,25 @@ app.get('/signup',
     res.render('signup');
   });
 
+
+app.post('/signup',
+  (req, res) => {
+    res.render('signup');
+    // console.log('req = ', req);
+    models.Users.create(req.body);
+  });
+
+app.post('/login',
+  (req, res) => {
+    res.render('login');
+    let userAuth = models.Users.getAll(req.body)
+      .then((data) => {
+        console.log('data = ', data);
+      });
+    // console.log(req.body.username);
+    console.log('userAuth = ', userAuth);
+  });
+
 app.get('/links',
   (req, res, next) => {
     models.Links.getAll()

@@ -38,6 +38,8 @@ class Model {
     }
     let parsedOptions = parseData(options);
     let queryString = `SELECT * FROM ${this.tablename} WHERE ${parsedOptions.string.join(' AND ')}`;
+    // console.log('parsedOptions.values = ', parsedOptions.values);
+    // console.log('db = ', db);
     return executeQuery(queryString, parsedOptions.values);
   }
 
