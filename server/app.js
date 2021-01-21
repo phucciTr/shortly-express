@@ -37,23 +37,32 @@ app.get('/signup',
     res.render('signup');
   });
 
-
 app.post('/signup',
   (req, res) => {
-    res.render('signup');
-    // console.log('req = ', req);
-    models.Users.create(req.body);
+    models.Users.create(req.body)
+      .then(() => {
+        res.redirect('/login');
+      })
+      .catch((err) => {
+        res.redirect('/signup');
+      });
   });
 
 app.post('/login',
   (req, res) => {
-    res.render('login');
-    let userAuth = models.Users.getAll(req.body)
-      .then((data) => {
-        console.log('data = ', data);
+
+    let attempted = req.body.password;
+
+    models.Users.get(req.body)
+      .then((auth) => {
+        let {password, salt} = auth[0];
+        return models.Users.compare(attempted, password, salt);
+      })
+      .then((result) => {
+        let route = result ? '/index' : '/login';
+        res.redirect(route);
       });
-    // console.log(req.body.username);
-    console.log('userAuth = ', userAuth);
+
   });
 
 app.get('/links',

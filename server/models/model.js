@@ -38,8 +38,6 @@ class Model {
     }
     let parsedOptions = parseData(options);
     let queryString = `SELECT * FROM ${this.tablename} WHERE ${parsedOptions.string.join(' AND ')}`;
-    // console.log('parsedOptions.values = ', parsedOptions.values);
-    // console.log('db = ', db);
     return executeQuery(queryString, parsedOptions.values);
   }
 
@@ -53,6 +51,15 @@ class Model {
    * the conditions provided, only one will be provided upon fulfillment.
    */
   get(options) {
+
+    let {username, password} = options;
+
+    if (username && password) {
+      let queryString = `SELECT * FROM ${this.tablename} \
+                          WHERE username = '${username}'`;
+      return executeQuery(queryString);
+    }
+
     let parsedOptions = parseData(options);
     let queryString = `SELECT * FROM ${this.tablename} WHERE ${parsedOptions.string.join(' AND ')} LIMIT 1`;
     return executeQuery(queryString, parsedOptions.values).then(results => results[0]);
