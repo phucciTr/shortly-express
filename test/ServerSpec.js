@@ -66,6 +66,7 @@ describe('', function() {
       var queryString = 'SELECT * FROM users';
       db.query(queryString, function(err, results) {
         if (err) { return done(err); }
+
         expect(results).to.deep.equal([]);
         done();
       });
@@ -332,41 +333,44 @@ describe('', function() {
 
       it('parses cookies and assigns an object of key-value pairs to a session property on the request', function(done) {
         var requestWithoutCookies = httpMocks.createRequest();
+        var response = httpMocks.createResponse();
+
+        cookieParser(requestWithoutCookies, response, function(cookies) {
+          expect(cookies).to.be.an('object');
+          expect(cookies).to.eql({});
+        });
+
+
         var requestWithCookies = httpMocks.createRequest({
           headers: {
             Cookie: 'shortlyid=8a864482005bcc8b968f2b18f8f7ea490e577b20'
           }
         });
+        var response = httpMocks.createResponse();
+
+        cookieParser(requestWithCookies, response, function(cookies) {
+          expect(cookies).to.be.an('object');
+          expect(cookies).to.eql({ shortlyid: '8a864482005bcc8b968f2b18f8f7ea490e577b20' });
+        });
+
+
+
         var requestWithMultipleCookies = httpMocks.createRequest({
           headers: {
             Cookie: 'shortlyid=18ea4fb6ab3178092ce936c591ddbb90c99c9f66; otherCookie=2a990382005bcc8b968f2b18f8f7ea490e990e78; anotherCookie=8a864482005bcc8b968f2b18f8f7ea490e577b20'
           }
         });
-
         var response = httpMocks.createResponse();
 
-        cookieParser(requestWithoutCookies, response, function() {
-          var cookies = requestWithoutCookies.cookies;
+        cookieParser(requestWithMultipleCookies, response, function(cookies) {
           expect(cookies).to.be.an('object');
-          expect(cookies).to.eql({});
+          expect(cookies).to.eql({
+            shortlyid: '18ea4fb6ab3178092ce936c591ddbb90c99c9f66',
+            otherCookie: '2a990382005bcc8b968f2b18f8f7ea490e990e78',
+            anotherCookie: '8a864482005bcc8b968f2b18f8f7ea490e577b20'
+          });
+          done();
         });
-
-        cookieParser(requestWithCookies, response, function() {
-          var cookies = requestWithCookies.cookies;
-          expect(cookies).to.be.an('object');
-          expect(cookies).to.eql({ shortlyid: '8a864482005bcc8b968f2b18f8f7ea490e577b20' });
-        });
-
-        // cookieParser(requestWithMultipleCookies, response, function() {
-        //   var cookies = requestWithMultipleCookies.cookies;
-        //   expect(cookies).to.be.an('object');
-        //   expect(cookies).to.eql({
-        //     shortlyid: '18ea4fb6ab3178092ce936c591ddbb90c99c9f66',
-        //     otherCookie: '2a990382005bcc8b968f2b18f8f7ea490e990e78',
-        //     anotherCookie: '8a864482005bcc8b968f2b18f8f7ea490e577b20'
-        //   });
-        //   done();
-        // });
       });
     });
 
