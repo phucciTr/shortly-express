@@ -5,6 +5,7 @@ var httpMocks = require('node-mocks-http');
 
 var app = require('../server/app.js');
 var schema = require('../server/db/config.js');
+var sess = require('../server/middleware/auth.js');
 var port = 4568;
 
 /************************************************************/
@@ -379,12 +380,20 @@ describe('', function() {
         var requestWithoutCookies = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
-        createSession(requestWithoutCookies, response, function() {
+        console.log('HELLO');
+        // if no cookies in the request
+        // generate a (session) with a (unique hash) and store it the (sessions table)
+        createSession(requestWithoutCookies, response, function(data) {
+
+          // generated session with a (unique hash)
           var session = requestWithoutCookies.session;
+          console.log('data = ', data);
+          console.log('sess = ', sess);
+
           expect(session).to.exist;
           expect(session).to.be.an('object');
           expect(session.hash).to.exist;
-          done();
+          // done();
         });
       });
 
