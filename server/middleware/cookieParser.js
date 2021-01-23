@@ -1,5 +1,5 @@
 const hasCookie = (cookie) => {
-  return cookie;
+  return cookie && Object.keys(cookie).length > 0;
 };
 
 const hasMultipleCookies = (cookie) => {
@@ -48,4 +48,5 @@ const parseCookies = (req, res, next) => {
   }
 };
 
-module.exports = parseCookies;
+exports.parseCookies = parseCookies;
+exports.hasCookie = hasCookie;
