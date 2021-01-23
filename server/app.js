@@ -34,7 +34,11 @@ app.get('/create',
 
 app.get('/login',
   (req, res) => {
-    res.render('login');
+    createSession(req, res, (session) => {
+      res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
+      res.render('login');
+    });
+    // res.render('login');
   });
 
 app.get('/signup',
@@ -120,6 +124,8 @@ app.post('/links',
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
+
 
 
 
