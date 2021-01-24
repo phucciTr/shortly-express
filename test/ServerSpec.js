@@ -542,8 +542,8 @@ describe('', function() {
           db.query(queryString, function(error, sessions) {
             if (error) { return done(error); }
 
-            expect(sessions.length).to.equal(1);
-            expect(sessions[0].userId).to.be.null;
+            expect(sessions.length).to.equal(2);
+            expect(sessions[1].userId).to.be.null;
             done();
           });
         });

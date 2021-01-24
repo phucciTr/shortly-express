@@ -19,6 +19,7 @@ console.log('createSession = ', createSession);
 
 app.get('/',
   (req, res) => {
+    console.log('req.headers = ', req.headers);
     createSession(req, res, (session) => {
       res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
       res.render('index');
@@ -49,8 +50,18 @@ app.get('/signup',
 app.post('/signup',
   (req, res) => {
     models.Users.create(req.body)
-      .then(() => {
-        res.redirect('/login');
+      .then((result) => {
+        let { insertId } = result;
+
+        createSession(req, res, (session) => {
+          let { id, hash } = session;
+
+          console.log('session = ', session);
+
+          models.Sessions.update({id: id}, {userId: insertId});
+          res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
+          res.redirect('/login');
+        });
       })
       .catch((err) => {
         res.redirect('/signup');
@@ -60,17 +71,52 @@ app.post('/signup',
 app.post('/login',
   (req, res) => {
 
+    console.log('req.headers.cookie = ', req.headers.cookie);
     let attempted = req.body.password;
 
     models.Users.get(req.body)
       .then((auth) => {
-        let {password, salt} = auth[0];
-        return models.Users.compare(attempted, password, salt);
+        let {password, salt, id} = auth[0];
+        let userId = id;
+        console.log('auth = ', auth);
+
+        if (models.Users.compare(attempted, password, salt)) {
+
+          // get hash from sessions tb, userId 1
+          models.Sessions.get({userId: userId})
+            .then((result) => {
+              console.log('result = ', result);
+
+              models.Sessions.update({id: id}, {userId: insertId});
+              res.cookie('shortlyid', `${result.hash}`, { maxAge: 900000, httpOnly: false});
+              res.redirect('/');
+            });
+
+          // createSession(req, res, (session) => {
+          //   let { id, hash } = session;
+          //   // models.Sessions.update({hash: hash}, {userId: userId});
+          //   // res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
+
+          //   res.redirect('/');
+
+          //   // res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
+          //   // res.redirect('/login');
+          // });
+        }
       })
-      .then((result) => {
-        let route = result ? '/index' : '/login';
-        res.redirect(route);
+      .catch((err) => {
+        res.redirect('/login');
       });
+
+
+    // .then((result) => {
+
+    //   let route = result ? '/index' : '/login';
+    //   res.redirect(route);
+    // })
+    // .catch(() => {
+    //   res.redirect('/login');
+    // });
 
   });
 
