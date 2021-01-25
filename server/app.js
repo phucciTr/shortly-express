@@ -3,7 +3,9 @@ const path = require('path');
 const utils = require('./lib/hashUtils');
 const partials = require('express-partials');
 const bodyParser = require('body-parser');
-const { createSession } = require('./middleware/auth');
+// const { createSession } = require('./middleware/auth');
+
+const Auth = require('./middleware/auth');
 const models = require('./models');
 
 const app = express();
@@ -15,112 +17,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
-console.log('createSession = ', createSession);
+app.use(require('./middleware/cookieParser'));
+app.use(Auth.createSession);
 
-app.get('/',
-  (req, res) => {
-    console.log('req.headers = ', req.headers);
-    createSession(req, res, (session) => {
-      res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
-      res.render('index');
-    });
 
-    // res.render('index');
-  });
-
-app.get('/create',
+app.get('/', Auth.verifySession,
   (req, res) => {
     res.render('index');
   });
 
-app.get('/login',
+app.post('/',
   (req, res) => {
-    createSession(req, res, (session) => {
-      res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
-      res.render('login');
-    });
-    // res.render('login');
+    res.render('index');
   });
 
-app.get('/signup',
+app.get('/create', Auth.verifySession,
   (req, res) => {
-    res.render('signup');
+    res.render('index');
   });
 
-app.post('/signup',
-  (req, res) => {
-    models.Users.create(req.body)
-      .then((result) => {
-        let { insertId } = result;
 
-        createSession(req, res, (session) => {
-          let { id, hash } = session;
-
-          console.log('session = ', session);
-
-          models.Sessions.update({id: id}, {userId: insertId});
-          res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
-          res.redirect('/login');
-        });
-      })
-      .catch((err) => {
-        res.redirect('/signup');
-      });
-  });
-
-app.post('/login',
-  (req, res) => {
-
-    console.log('req.headers.cookie = ', req.headers.cookie);
-    let attempted = req.body.password;
-
-    models.Users.get(req.body)
-      .then((auth) => {
-        let {password, salt, id} = auth[0];
-        let userId = id;
-        console.log('auth = ', auth);
-
-        if (models.Users.compare(attempted, password, salt)) {
-
-          // get hash from sessions tb, userId 1
-          models.Sessions.get({userId: userId})
-            .then((result) => {
-              console.log('result = ', result);
-
-              models.Sessions.update({id: id}, {userId: insertId});
-              res.cookie('shortlyid', `${result.hash}`, { maxAge: 900000, httpOnly: false});
-              res.redirect('/');
-            });
-
-          // createSession(req, res, (session) => {
-          //   let { id, hash } = session;
-          //   // models.Sessions.update({hash: hash}, {userId: userId});
-          //   // res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
-
-          //   res.redirect('/');
-
-          //   // res.cookie('shortlyid', `${session.hash}`, { maxAge: 900000, httpOnly: false});
-          //   // res.redirect('/login');
-          // });
-        }
-      })
-      .catch((err) => {
-        res.redirect('/login');
-      });
-
-
-    // .then((result) => {
-
-    //   let route = result ? '/index' : '/login';
-    //   res.redirect(route);
-    // })
-    // .catch(() => {
-    //   res.redirect('/login');
-    // });
-
-  });
-
-app.get('/links',
+app.get('/links', Auth.verifySession,
   (req, res, next) => {
     models.Links.getAll()
       .then(links => {
@@ -131,7 +48,7 @@ app.get('/links',
       });
   });
 
-app.post('/links',
+app.post('/links', Auth.verifySession,
   (req, res, next) => {
     var url = req.body.url;
     if (!models.Links.isValidUrl(url)) {
@@ -170,6 +87,51 @@ app.post('/links',
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
+app.get('/signup',
+  (req, res) => {
+    res.render('signup');
+  });
+
+app.post('/signup',
+  (req, res) => {
+    models.Users.create(req.body)
+      .then(({insertId}) => {
+        models.Sessions.update({id: req.session.id}, {userId: insertId});
+        res.redirect('/login');
+      })
+      .catch((err) => {
+        res.redirect('/signup');
+      });
+  });
+
+
+app.get('/login',
+  (req, res) => {
+    res.render('login');
+  });
+
+app.post('/login',
+  (req, res) => {
+
+    let attempted = req.body.password;
+
+    models.Users.get(req.body)
+      .then((auth) => {
+        let {password, salt, id} = auth[0];
+
+        if (models.Users.compare(attempted, password, salt)) {
+          models.Sessions.update({id: req.session.id}, {userId: id});
+          res.redirect('/index');
+
+        } else { throw auth; }
+      })
+      .catch((err) => {
+        res.redirect('/login');
+      });
+
+  });
+
 
 
 

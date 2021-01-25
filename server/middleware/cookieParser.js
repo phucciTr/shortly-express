@@ -28,25 +28,34 @@ const mergeCookies = (cookie1, cookie2) => {
   return Object.assign(cookie1, cookie2);
 };
 
-
 const parseCookies = (req, res, next) => {
 
-  let cookies = req.headers.cookie;
-  let parsedCookies = {};
+  // Send new cookie to the request
+  // res.cookie('theCookie', 'newCookie');
+  // res.cookie('secondOne', 'anotherCookie');
 
-  if (!hasCookie(cookies)) { next({}); }
+  // Clear specified cookies from the client
+  // res.clearCookie('theCookie');
+  // res.clearCookie('shortlyid');
+
+  let parsedCookies = {};
+  let cookies = req.get('Cookie');
+
+
+  if (!hasCookie(cookies)) { req.cookies = {}; }
 
   if (hasCookie(cookies)) {
-    if (!hasMultipleCookies(cookies)) { next(parse(cookies)); }
+    if (!hasMultipleCookies(cookies)) { req.cookies = parse(cookies); }
 
     if (hasMultipleCookies(cookies)) {
       cookies.split(';').forEach((cookie) => {
         parsedCookies = mergeCookies(parsedCookies, cookie);
       });
-      next(parsedCookies);
+      req.cookies = parsedCookies;
     }
   }
+  next();
 };
 
-exports.parseCookies = parseCookies;
-exports.hasCookie = hasCookie;
+
+module.exports = parseCookies;

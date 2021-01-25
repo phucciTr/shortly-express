@@ -327,9 +327,7 @@ describe('', function() {
   });
 
   describe('Express Middleware', function() {
-    var cookieMiddleware = require('../server/middleware/cookieParser.js');
-    var cookieParser = cookieMiddleware.parseCookies;
-
+    var cookieParser = require('../server/middleware/cookieParser.js');
     var createSession = require('../server/middleware/auth.js').createSession;
 
     describe('Cookie Parser', function() {
@@ -338,7 +336,9 @@ describe('', function() {
         var requestWithoutCookies = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
-        cookieParser(requestWithoutCookies, response, function(cookies) {
+        cookieParser(requestWithoutCookies, response, function() {
+          let cookies = requestWithoutCookies.cookies;
+
           expect(cookies).to.be.an('object');
           expect(cookies).to.eql({});
         });
@@ -351,7 +351,9 @@ describe('', function() {
         });
         var response = httpMocks.createResponse();
 
-        cookieParser(requestWithCookies, response, function(cookies) {
+        cookieParser(requestWithCookies, response, function() {
+          let cookies = requestWithCookies.cookies;
+
           expect(cookies).to.be.an('object');
           expect(cookies).to.eql({ shortlyid: '8a864482005bcc8b968f2b18f8f7ea490e577b20' });
         });
@@ -365,7 +367,9 @@ describe('', function() {
         });
         var response = httpMocks.createResponse();
 
-        cookieParser(requestWithMultipleCookies, response, function(cookies) {
+        cookieParser(requestWithMultipleCookies, response, function() {
+          let cookies = requestWithMultipleCookies.cookies;
+
           expect(cookies).to.be.an('object');
           expect(cookies).to.eql({
             shortlyid: '18ea4fb6ab3178092ce936c591ddbb90c99c9f66',
@@ -385,7 +389,9 @@ describe('', function() {
         /* if (no cookies) in the request,
            generate a (new session) with a (uniq hash) &
            store it the (sessions table) */
-        createSession(requestWithoutCookies, response, function(session) {
+        createSession(requestWithoutCookies, response, function() {
+          let session = requestWithoutCookies.session;
+
           expect(session).to.exist;
           expect(session).to.be.an('object');
           expect(session.hash).to.exist;
@@ -437,13 +443,13 @@ describe('', function() {
         var requestWithoutCookies = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
-        createSession(requestWithoutCookies, response, function(session) {
-          var sessionHashOne = session;
+        createSession(requestWithoutCookies, response, function() {
+          var sessionHashOne = requestWithoutCookies.session.hash;
           var secondRequestWithoutCookies = httpMocks.createRequest();
           var responseTwo = httpMocks.createResponse();
 
           createSession(secondRequestWithoutCookies, responseTwo, function(session) {
-            var sessionHashTwo = session.hash;
+            var sessionHashTwo = secondRequestWithoutCookies.session.hash;
             expect(sessionHashOne).to.not.equal(sessionHashTwo);
             done();
           });
@@ -462,8 +468,8 @@ describe('', function() {
           var userId = results.insertId;
 
           // New (session)(without cookie) - from BillZito
-          createSession(requestWithoutCookie, response, function(session) {
-            var hash = session.hash;
+          createSession(requestWithoutCookie, response, function() {
+            var hash = requestWithoutCookie.session.hash;
 
             // (mimicking) a (session) that is (assigned) to (BillZito)
             db.query('UPDATE sessions SET userId = ? WHERE hash = ?', [userId, hash], function(error, result) {
@@ -542,8 +548,8 @@ describe('', function() {
           db.query(queryString, function(error, sessions) {
             if (error) { return done(error); }
 
-            expect(sessions.length).to.equal(2);
-            expect(sessions[1].userId).to.be.null;
+            expect(sessions.length).to.equal(1);
+            expect(sessions[0].userId).to.not.be.null;
             done();
           });
         });
